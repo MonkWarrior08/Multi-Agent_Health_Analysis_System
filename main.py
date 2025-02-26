@@ -10,11 +10,17 @@ import asyncio
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY")
+open_api_key = os.getenv("OPENAI_API_KEY")
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
-client = OpenAIChatCompletionClient(
+openai_client = OpenAIChatCompletionClient(
     model="o3-mini",
-    api_key=api_key
+    api_key=open_api_key
+)
+
+gemini_client = OpenAIChatCompletionClient(
+    model= "gemini-2.0-flash",
+    api_key=gemini_api_key
 )
 
 text = TextMentionTermination(text="APPROVE")
@@ -46,7 +52,7 @@ file_tool = FileTool(folder_path="./files")
 
 planner = AssistantAgent(
     name="planner",
-    model_client=client,
+    model_client=openai_client,
     description="An agent for planning tasks, this agent should be the first to engage when given a new task.",
     system_message="""
     You are a planning agent.
@@ -68,7 +74,7 @@ planner = AssistantAgent(
 
 file_agent = AssistantAgent(
     name="FileSourcer",
-    model_client=client,
+    model_client=gemini_client,
     description="An agent who has available information for the given files.",
     tools=[file_tool],
     system_message="""You are the FileSourcer agent.
@@ -98,7 +104,7 @@ Only select one agent."""
 
 team = SelectorGroupChat(
     participants=[planner,file_agent],
-    model_client=client,
+    model_client=openai_client,
     termination_condition=text,
     selector_prompt=selector
 )
