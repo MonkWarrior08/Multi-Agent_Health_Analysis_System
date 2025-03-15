@@ -3,8 +3,8 @@ import re
 from datetime import datetime
 
 def main():
-    dir = "files/journal-app"
-    output = "combine/journal-app.txt"
+    dir = "combine_files/files/journal-app"
+    output = "combine_files/combine/journal-app.txt"
 
     if not os.path.isdir(dir):
         print("Dir not found: {dir}")
@@ -23,8 +23,6 @@ def main():
     file_date.sort()
 
     with open(output, 'w', encoding='utf-8') as outfile:
-        outfile.write("===Journal-app entries===\n\n")
-        
         for date_obj, file_name in file_date:
             file_path = os.path.join(dir, file_name)
             date = date_obj.strftime("%B %d, %Y")
