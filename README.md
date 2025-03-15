@@ -6,7 +6,7 @@
 
 ## 🔍 Overview
 
-AutoGen is an intelligent multi-agent system that analyzes health data from various sources to generate personalized daily health plans. The system uses a collaborative approach with specialized AI agents that work together to create actionable insights.
+An intelligent multi-agent system that analyzes health data from various sources to generate personalized daily health plans. The system uses a collaborative approach with specialized AI agents that work together to create actionable insights.
 
 ## ✨ Features
 
@@ -75,4 +75,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-⭐ **AutoGen** - Transforming health data into actionable insights ⭐
+⭐ Transforming health data into actionable insights ⭐
