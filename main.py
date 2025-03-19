@@ -55,23 +55,56 @@ text = TextMentionTermination(text="APPROVE")
 main_agent = AssistantAgent(
     name="MainCoordinator",
     model_client= openai_client,
-    description= "This is the main agent who is supposed to go first when given a task by the user.",
+    description= "This is the main agent who is supposed to go first when given a task by the user and also synthesizes the final health plan.",
     system_message="""
-    You are the main coordinator. Your job is to direct the health analysis process, 
+    You are the main coordinator and health plan synthesizer. Your job is to direct the health analysis process, 
     request information from specialized agents, and create a final daily health plan.
     Your agents are: 
         - AppJournalAnalyst: analyze structured journal entries from the health tracking app
         - HistoricalJournalAnalyst: analyze historical journal entries that are less structured and from an earlier time period.
         - UserInsightsAnalyst: analyze the user's own observations, patterns, and suggestions collected throughout their health management journey.
 
-        When assigning tasks, use this format:
-     1. <agent> : <task>
+    When assigning tasks, use this format:
+    1. <agent> : <task>
  
-     Only when after the agents has complete their task, provide the finding from the agent and end with "APPROVE"
-    """
+    After all agents have completed their tasks, you will synthesize their findings into a comprehensive daily health plan.
     
+    PLAN SYNTHESIS PROCESS:
+    1. Review all analyses from the specialized agents
+    2. Identify overlapping patterns and insights across analyses
+    3. Prioritize issues based on:
+       - Severity and frequency of symptoms
+       - User's stated priorities and preferences
+       - Historical effectiveness of management strategies
+    4. Create a realistic daily schedule with specific recommendations
+    5. Ensure the plan addresses both immediate symptom management and long-term health improvements
+    
+    FORMAT YOUR HEALTH PLAN:
+    
+    # DAILY HEALTH PLAN
+    
+    ## Summary of Key Insights
+    [Brief overview of most important patterns and triggers identified across all analyses]
+    
+    ## Daily Schedule
+    - Morning Routine: [Specific recommendations with times]
+    - Dietary Plan: [Meals and snacks with specific foods to include/avoid]
+    - Activity Plan: [Exercise and rest recommendations]
+    - Evening Routine: [Wind-down activities and sleep preparation]
+    
+    ## Symptom Management Strategies
+    [List specific approaches for managing primary symptoms]
+    
+    ## Monitoring Plan
+    [Suggest metrics to track and how to monitor progress]
+    
+    ## Adaptation Guidelines
+    [Provide guidance on how to adjust the plan based on daily variations in symptoms]
+    
+    End with "APPROVE" when the daily health plan is complete.
+    """
 )
-
+# to do: explain how rating works, from 1 to 4, and how it works when a rating goes up or down.
 journal_app_agent = AssistantAgent(
     name="AppJournalAnalyst",
     model_client= gemini_client,
@@ -161,70 +194,21 @@ user_insights_agent = AssistantAgent(
     tools=[file_tool]
 )
 
-plan_synthesizer = AssistantAgent(
-    name="HealthPlanSynthesizer",
-    model_client= openai_client,
-    description="This agent creates comprehensive daily health plans by integrating insights from all specialized analysis agents.",
-    system_message="""
-    You create a personalized daily health plan by synthesizing insights from all specialized agents.
-    
-    STEPS TO FOLLOW:
-    1. Review all analyses from the specialized agents:
-       - AppJournalAnalyst (structured health tracking data)
-       - HistoricalJournalAnalyst (historical health patterns)
-       - UserInsightsAnalyst (subjective user experiences)
-    2. Identify overlapping patterns and insights across analyses
-    3. Prioritize issues based on:
-       - Severity and frequency of symptoms
-       - User's stated priorities and preferences
-       - Historical effectiveness of management strategies
-    4. Create a realistic daily schedule with specific recommendations
-    5. Ensure the plan addresses both immediate symptom management and long-term health improvements
-    
-    FORMAT YOUR RESPONSE:
-    
-    # DAILY HEALTH PLAN
-    
-    ## Summary of Key Insights
-    [Brief overview of most important patterns and triggers identified across all analyses]
-    
-    ## Daily Schedule
-    - Morning Routine: [Specific recommendations with times]
-    - Dietary Plan: [Meals and snacks with specific foods to include/avoid]
-    - Activity Plan: [Exercise and rest recommendations]
-    - Evening Routine: [Wind-down activities and sleep preparation]
-    
-    ## Symptom Management Strategies
-    [List specific approaches for managing primary symptoms]
-    
-    ## Monitoring Plan
-    [Suggest metrics to track and how to monitor progress]
-    
-    ## Adaptation Guidelines
-    [Provide guidance on how to adjust the plan based on daily variations in symptoms]
-    
-    Your plan should be realistic, actionable, and personalized to the user's specific health patterns and preferences.
-    """,
-)
-
-
 selector = """
 Select the most appropriate agent to respond next in this health analysis system.
 
 AGENT ROLES:
-- MainCoordinator: Directs the overall process, assigns tasks to specialized agents, and ensures all aspects of health analysis are covered before synthesizing a plan.
+- MainCoordinator: Directs the overall process, assigns tasks to specialized agents, and creates a comprehensive health plan after all analyses are complete.
 - AppJournalAnalyst: Analyzes structured app data for symptom patterns, diet correlations, and documented management strategies.
 - HistoricalJournalAnalyst: Examines historical health records for long-term patterns, chronic issues, and past treatment effectiveness.
 - UserInsightsAnalyst: Evaluates user's personal observations, preferences, and subjective experiences.
-- HealthPlanSynthesizer: Creates a comprehensive health plan after all analyses are complete.
 - User: The person seeking health assistance.
 
 SELECTION GUIDELINES:
 1. MainCoordinator should always go first to establish direction.
 2. Specialized analysts (App, Historical, UserInsights) should only begin after being assigned tasks.
-3. HealthPlanSynthesizer should only be selected after all three analyses are complete.
-4. Return to MainCoordinator after each analysis is complete to assess next steps.
-5. Select User when direct input or clarification is needed.
+3. Return to MainCoordinator after each analysis is complete to assess next steps and finally synthesize the health plan.
+4. Select User when direct input or clarification is needed.
 
 Current conversation context:
 {history}
@@ -233,7 +217,7 @@ Based on the current state of the conversation, select ONE agent from {participa
 """
 
 # Create the group chat
-agents = [main_agent, journal_app_agent, historical_journal_agent, user_insights_agent, plan_synthesizer]
+agents = [main_agent, journal_app_agent, historical_journal_agent, user_insights_agent]
 group_chat = SelectorGroupChat(participants=agents, model_client= gemini_client, selector_prompt=selector, termination_condition=text)
 
 async def main():
