@@ -105,6 +105,7 @@ main_agent = AssistantAgent(
     """
 )
 # to do: explain how rating works, from 1 to 4, and how it works when a rating goes up or down.
+# create agent where they only receive context from agents response and not their content (journal content)
 journal_app_agent = AssistantAgent(
     name="AppJournalAnalyst",
     model_client= gemini_client,
